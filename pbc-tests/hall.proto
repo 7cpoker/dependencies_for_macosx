@@ -1,0 +1,597 @@
+/*******************************************************************************
+*                      大厅服通用协议描述
+*
+********************************************************************************/
+
+syntax = "proto2";
+package hall;
+
+//import "dtcommon.proto";
+import "hall_cmd.proto";
+
+/* PART I
+ * 棋牌类游戏通用逻辑处理cmd以10开头，往后递增,
+ * C2S表示客户端发送的请求,S2C表示服务端返回
+ */
+// 用户详细信息
+message C2S_UserDetailData{
+	required int32 uid        =1;
+}
+
+message S2C_UserDetailData{
+	required int32 uid        =1;
+	optional int32 reg_time   =2;  //注册时间。格式1362714669
+	optional int32 last_time  =3;  //最后一次登录时间
+	optional int32 now_coin   =4;  //现有资产
+	optional int32 max_coin   =5;  //历史最高资产
+	optional int32 n_game     =6;  //游戏局数
+	repeated int32 best_cards =7;  //最好牌型
+	optional string nickname  =8;  //昵称
+	optional int32 sex        =9;	 //性别
+	optional string headImg   =10; //头像
+
+	optional int32 ddz_lv     =11; //斗地主等级
+	optional int32 ddz_win    =12; //胜局数
+	optional int32 ddz_count  =13; //总局数
+	optional string ddz_org_name =14; //村庄名
+}
+
+// 金币变动
+message S2C_ChangeCoin {
+	required int32 change =1; // 改变量，正为增加金币，负为减少金币
+	required int32 coin   =2; // 改变后的金币量
+	required int32 code   =3; // 金币变动码
+}
+
+// 活动统计信息
+message C2S_ActStatistics{
+	required int32 uid        =1;
+}
+
+message S2C_ActStatistics{
+	required int32 code     =1; // 0:数据有效  1:统计局数不够
+	optional float vpip     =2[default=0];
+	optional float pfr      =3[default=0];
+	optional float af       =4[default=0];
+	optional float wtsd     =5[default=0];
+	optional float bb100    =6[default=0]; // 百手输赢大盲数
+	optional float chip100  =7[default=0]; // 百手输赢金币
+	optional int32 win      =8[default=0]; // 胜局数
+}
+
+message C2S_SvTime{ // 获取服务器时间
+}
+
+message S2C_SvTime{
+	optional int32 t =1; // 例如，1419476950 是 2014-12-25 11:09:10
+}
+
+// 考虑到之前的功能，追踪关注列表的玩家用C2S_GetFriendRoomId，跟追踪好友列表的一样
+message C2S_TurnTraceFlag { //设置是否允许别人追踪自己所在房间
+	optional int32 flag =1; //0允许追踪。1禁止追踪
+}
+
+
+/* PART II
+ * 互动道具
+ * 聊天消息：包括好友聊天，房间聊天，游戏内广播聊天消息，全服广播，俱乐部聊天
+ */
+// 使用互动道具
+message C2S_UseProps {
+	required int32 tool_id	=1; // 道具Id
+	required int32 tuid		=2; // 对谁使用
+	optional int32 flags	=3; // 额外参数。0:从道具箱;1:直接扣金币
+}
+
+message S2C_UseProps {
+	required int32	fuid	=1; // 使用者Id
+	required int32	tuid	=2; // 对谁使用
+	required int32	tool_id	=3; // 道具Id
+}
+
+// 给荷官小费
+message C2S_Tip {
+	required int32 coin		=1;
+}
+
+message S2C_Tip {
+	required int32 coin		=1; // 为0表示失败
+	required int32 uid		=2;
+	required int32 seat_id	=3;
+}
+
+// 荷官说话
+message S2C_DealerSpeak {
+	required string msg		=1;
+}
+
+message t_textmsg {
+	required string text	=1;
+	optional uint32 time	=2;
+}
+
+/* 广播消息(仅支持文本消息)
+ */
+message C2S_BroadcastMsg {
+	required uint32 gameid	=1; // 填0表示全游戏广播
+	required t_textmsg msg	=2;
+	optional uint32 flags	=3	[default = 0];
+}
+
+message S2C_BroadcastMsg {
+	optional uint32 uid		=1	[default = 0];
+	required t_textmsg msg	=2;
+	optional uint32 flags	=3	[default = 0];
+	optional uint32 gameid	=4;
+}
+
+// 好友、群聊天消息结构体定义
+message t_chatmsg {
+	required string text 	=1; // 文本消息
+	optional string sndurl	=2; // 录音消息地址
+	optional int32 sndsecs	=3; // 录音时长
+	optional string sndfn	=4; // 录音文件名
+	optional int32 time		=5; // 发消息时的系统时间
+}
+
+// 房间内广播消息
+message C2S_RoomPubTalk {
+	required t_chatmsg msg	=1;
+}
+
+// 发送聊天消息之后客户端收到的应答消息
+// 里面包括错误码 为0表示发送成功
+// errno 0消息以在线方式发送 1消息以离线方式发送 2因为离线消息太多发送失败 3字符消息太长 4对方不在线，不能发语音消息
+message S2C_ChatMsgACK {
+	required int32 errno	=1;
+}
+
+message S2C_RoomPubTalk {
+	required int32 uid		=1;
+	required t_chatmsg msg	=2;
+}
+
+// 表情消息，只能在房间内使用，等同于房间广播消息
+message C2S_Expression {
+	required int32 type		=1;
+}
+
+// 表情
+message S2C_Expression {
+	required int32 type		=1; // 表情类型
+	required int32 seatId	=2; // 座位
+	optional int32 coin		=3; // 花费
+}
+
+// 好友聊天消息
+message C2S_OneP2PMsg {
+	optional int32 tuid		=1;
+	required t_chatmsg msg	=2;
+}
+
+// 一个好友的多条消息
+message S2C_OneP2PMsgList {
+	optional int32 fuid			=1;
+	repeated t_chatmsg msglist	=2;
+}
+
+// 多个好友的多条消息
+message S2C_ManyP2PMsgList {
+	repeated S2C_OneP2PMsgList msgusers =1;
+}
+
+// 群聊天消息
+message C2S_OneGroupMsgs {
+	required int32 groupid	=1; // 群ID
+	optional int32 atwho	=2; // @玩家uid
+	required t_chatmsg msg	=3;
+}
+
+// 一条群消息结构体定义
+message t_groupmsg {
+	optional uint32 fuid	=1;
+	optional uint32 atwho	=2;
+	required t_chatmsg msg	=3;
+}
+
+// 一个群里面的多条消息
+message S2C_OneGroupMsgList {
+	required int32 groupid	=1;
+	repeated t_groupmsg msglist =2;
+}
+
+// 多个群里面的多条消息
+message S2C_ManyGroupMsgList {
+	repeated S2C_OneGroupMsgList msggroups =1;
+}
+
+/* PART III
+ * 成就、任务系统
+ *
+ */
+// 获取成就列表
+message C2S_AchieveList {
+	required int32 uid			=1;
+}
+
+message S2C_AchieveList {
+	required int32 uid			=1;
+	repeated AchieveItem list	=2;
+}
+
+message AchieveItem {
+	required int32 typeid		=1; //成就类型ID
+	required int32 now			=2; //当前量
+	required int32 his_max		=3; //历史最高量
+}
+
+// 新获得的成就
+message S2C_NewAchieve {
+	required int32 achieveId	=1;
+}
+
+message C2S_GetActivities {
+
+}
+
+message S2C_GetActivities {
+	repeated ActivitySwitch list=1; // 活动开关列表  id -> 0/1  活动id对应是否开启(0关闭1开启)
+}
+
+message ActivitySwitch {
+	required  int32  activityId	=1; // 活动id
+	required  int32  state		=2; // 活动状体 0关闭 1开启
+}
+
+message S2C_NotifyTask { 			//任务已完成
+	optional int32 id   =1; 		//1:在线宝箱 2:对局任务
+}
+
+message C2S_OnLineBox { //获取在线宝箱奖励
+}
+
+message S2C_OnLineBox {
+	optional int32 coin  =1; //成功领取的金币，为0表示领取失败
+	optional int32 time  =2; //距离下次领取还剩多少秒，为0表示不再有新任务
+}
+
+message C2S_GetGameTaskInfo { //查询对局任务
+	optional int32 subType =1; //含义参见 C2S_RoomList。另外，0表示不分场次
+}
+
+message S2C_GetGameTaskInfo {
+	optional int32 subType =1;
+	optional int32 coin    =2;
+	optional int32 now     =3; //已完成局数
+	optional int32 need    =4; //需完成局数，为0表示不再有新任务
+}
+
+message C2S_GameTaskAward{
+	optional int32 subType =1;
+}
+
+message S2C_GameTaskAward {
+	optional int32 subType   =1;
+	optional int32 coin      =2; //成功领取的金币数，为0表示领取失败
+
+	optional int32 next_coin =3; //完成下一阶段任务能获得的金币
+	optional int32 now       =4; //已完成局数
+	optional int32 need      =5; //需完成局数，为0表示不再有新任务
+}
+
+message C2S_QueryOnLineBox {
+}
+
+message S2C_QueryOnLineBox {
+	optional int32 coin =1;
+	optional int32 need =2; //距离下次领奖还剩多少秒
+}
+
+//临时协议，新手任务
+message C2S_GreenhandTaskInfo{ //暂时不用
+}
+
+message S2C_GreenhandTaskInfo{ //登录成功时sv主动发
+	repeated int32 tasks =1; //4个元素。0未完成，1可领取，2已领取
+}
+
+message C2S_GreenhandTaskAward{
+	optional int32 t =1; //取值范围1234
+}
+
+message S2C_GreenhandTaskAward{
+	optional int32 coin =1; //为0，领取失败。大于0，领取成功
+}
+
+message S2C_PHP2SV2AS{
+	optional int32 i32 = 1; //暂时没用到
+	optional string str =2; //原样转发PHP字符串
+}
+
+message C2S_LABA{
+	optional int32 coin =1;
+}
+
+message S2C_LABA{
+	optional int32 coin =1;  //-1金币不足；0未中奖；大于0中奖金币数
+	optional int32 card_type =2;  //1-10，高牌-皇家同花顺
+	repeated int32 cards =3;  //5张牌。牌值例子，21方块2，132梅花K，144黑桃A
+}
+
+
+/* PART IV
+ * 好友系统
+ */
+// 查询自己离线时收到的加好友请求。一般情况下，客户端每次登录只请求一次
+message C2S_GetReqFriendList {
+
+}
+
+message S2C_GetReqFriendList {
+	repeated int32 uids =1;
+}
+
+// fuid 请求加 tuid为好友
+message C2S_ReqAddFriend {
+	required int32 tuid		=1; // 你请求加tuid为好友
+}
+
+message S2C_ReqAddFriend {
+	required int32 fuid		=2; // fuid请求加你为好友
+}
+
+// 回应是否添加好友
+message C2S_AckAddFriend {
+	required int32 fuid		=1; // 用户id
+	required bool  agree	=2; // 是否同意
+}
+
+// 添加好友返回
+message S2C_AckAddFriend {
+	required int32 tuid		=1; // 添加成功的好友id
+	required bool  agree	=2; // 是否同意
+}
+
+// 删除好友请求(删除成功之后，双方好友关系都会解除)
+message C2S_DelFriend {
+	required int32 tuid		=1; // 好友id
+}
+
+// fuid解除了和tuid的好友关系
+message S2C_DelFriend {
+	required int32 fuid		=1; // 
+	required int32 tuid		=2; //
+}
+
+// fuid将tuid列入黑名单
+message C2S_AddBlacklist {
+	required int32 tuid		=1;
+}
+
+message S2C_AddBlacklist {
+	required int32 fuid		=1;
+	required int32 tuid		=2;
+}
+
+// 好友上线
+message S2C_FriendOnline {
+	repeated int32 uid		=1;
+}
+
+// 好友下线
+message S2C_FriendOffLine {
+	optional int32 uid		=1;
+}
+
+// 获取好友列表请求
+message C2S_GetFriendList {
+	optional uint32 tmstamp			=1;						// 上一次获取的时间戳
+}
+
+message t_user_account {
+	required int32 uid				=1;						// 用户id
+	required int32 pfid				=2;						// 平台id
+	required string name			=3;						// 名字
+	optional int32 lv				=4;						// 等级
+	optional string img				=5;						// 头像
+	optional string homePage		=6;						// 主页
+	optional int32 vipLv			=7;						// vip等级
+	optional int32 coin				=8;						// 金币量
+	optional int32 sex        		=9;						// 性别：0保密，1男，2女
+	optional int32 notLoginDays		=10;					// 未登录天数
+}
+
+message t_user_status {
+	optional int32 gameid			=1;						// server id
+	optional int32 roomId			=2;						// 房间id
+}
+
+// 好友数据1029
+message t_friend_info {
+	required t_user_account account	=1;
+	required int32 friendType		=2;						// 好友类型 1好友 2黑名单
+	required bool isOnline			=3;						// 是否在线
+	optional t_user_status status	=4;						// 在线才有
+}
+
+// 获取好友列表返回1028
+message S2C_GetFriendList {
+	repeated t_friend_info flist 	=1;						// 好友列表
+}
+
+message C2S_SNSList {
+}
+
+message sns_user_info{
+	required int32 uid		=1;
+	optional int32 sex		=2; // 性别：0保密，1男，2女
+	optional string nickname=3; // 昵称
+	optional string header	=4; // 头像
+}
+
+message S2C_SNSList {
+	repeated sns_user_info list =1;
+}
+
+message C2S_SNSUserDetail {
+	required int32 uid =1;
+}
+
+message S2C_SNSUserDetail {
+	optional int32 uid =1;
+	optional int32 coin =2;
+	optional int32 rid =3; // -1离线 0大厅
+	optional int32 room_cfg_id =4; //房间配置id
+}
+
+// 发送自己的userInfo
+message C2S_UpdateUserInfo {
+	required string userInfo	=1;//userInfo
+}
+
+// 更新用户自定义信息
+message S2C_UpdateUserInfo {
+	required int32 uid			=1;//uid
+	required string userInfo	=2;//userInfo
+}
+
+/* PART V
+ * 公会村庄
+ * 俱乐部
+ */
+// 俱乐部
+message C2S_FoundClub{ //创建
+	optional string club_name =1; //小于32字节（客户端限制长度为7个字符）
+	optional int32 club_icon_id =2; //图标id
+}
+
+message S2C_FoundClub{
+	optional int32 code =1; //0成功 1名字过长 2特殊敏感字符 3创建数量达到上限 4金币数量不符合条件
+	optional int32 club_id =2;
+}
+
+message C2S_JoinClub{ //加入
+	optional int32 club_id =1;
+}
+
+message S2C_JoinClub{
+	optional int32 code =1; //0成功（需要等待管理员批准） 1俱乐部不存在 2该俱乐部禁止加入 3已经在俱乐部中 4加入俱乐部数量已到上限
+}
+
+message C2S_QuitClub{
+	optional int32 club_id =1;
+}
+
+message S2C_QuitClub{
+	optional int32 code =1; //0成功
+}
+
+message C2S_ClubJoinList{ //申请列表
+	optional int32 club_id =1;
+}
+
+message S2C_ClubJoinList{
+	message Elem{
+		optional int32 uid =1;
+		optional string name =2;
+		optional string head =3;
+	}
+	repeated Elem list =1;
+}
+
+message C2S_SetClub{
+	// 1设置公告 2设置允许被申请加入 3设置禁止加入 4添加组员 5删除组员 6从申请列表删除
+	// 7设为副部长 8设置各种管理员为普通会员 9设置对外展示 10设置不对外展示 11续期
+	optional int32 club_id =1;
+	optional int32 act =2;
+	optional string notice =3; //act为1时有效。公告信息。小于256字节
+	optional int32 uid =4;
+}
+
+message S2C_SetClub{
+	// -1未知错误（一般不出现） 0成功 1未定义的act 2没有权限 3已经是组员（act=4）
+	// 4没有申请（act=4） 5群人数达到上限（act=4） 6不是组员 7不能删除群主 8只能将普通会员设为副部长
+	optional int32 code =1;
+	optional int32 act =2; //跟发送的一致
+}
+
+message S2C_NotifyClubChange{
+	optional int32 act =1; //与C2S_SetClub的act一致，有4 5 7 8
+	optional int32 club_id =2;
+}
+
+message C2S_ClubList{
+	optional int32 club_id =1; //-2：获取自己所在的俱乐部列表 0：随便给一批 大于0：获取指定的俱乐部
+}
+
+message S2C_ClubList{
+	message Elem{
+		optional int32 club_id =1;
+		optional string club_name =2;
+		optional int32 club_icon_id =3;
+		optional int32 num =4; //俱乐部人数
+		optional int32 num_limit =5; //人数上限
+		optional int32 num_online=6;
+	}
+	repeated Elem list =1;
+	optional int32 club_id =2; //跟C2S_ClubList发送的一致
+}
+
+message C2S_ClubDetail{
+	optional int32 club_id =1;
+}
+
+message S2C_ClubDetail{
+	message Head{
+		optional int32 uid =1;
+		optional string head =2;
+	}
+	optional int32 club_id =1;
+	optional string club_name =2;
+	optional int32 num_online =3;
+	optional int32 num =4;
+	optional string notice =5;
+	optional int32 mgr_uid =6;
+	optional string mgr_name =7;
+	optional int32 etime =8; //失效时间
+	optional int32 club_icon_id =9;
+	optional int32 num_limit =10;
+	optional int32 ban_join =11; //0允许加入 1禁止加入
+	optional int32 ban_show =12; //0允许展示 1禁止展示
+	repeated Head list =13; //随机展示头像
+}
+
+message C2S_ClubMemberList{
+	optional int32 club_id =1;
+}
+
+message S2C_ClubMemberList{
+	message Elem{
+		optional int32 uid =1;
+		optional string name =2;
+		optional int32 post =3; //职位 1部长 2副部长 7普通会员
+		optional int32 online =4; //0离线 1在线
+		optional string head =5;
+		optional int32 coin =6; //在线才有
+	}
+	repeated Elem list =1;
+}
+
+message C2S_ClubTalk{
+	optional int32 club_id =1;
+	optional string text_msg =2;
+	optional string voice_msg =3;
+	optional int32 duration =4;
+	optional string voice_file_name =5;
+}
+
+message S2C_ClubTalk{
+	optional int32 msg_time =1;
+	optional int32 club_id =2;
+	optional int32 uid =3;
+	optional string text_msg =4; //文本消息
+	optional string voice_msg =5; //录音消息，给的是地址
+	optional int32 duration =6; //录音时长
+	optional string voice_file_name =7;
+}
+

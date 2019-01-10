@@ -1,0 +1,11 @@
+./skynet_start.c:	if (config->daemon) {
+./skynet_start.c:		if (daemon_init(config->daemon)) {
+./skynet_start.c:	skynet_harbor_init(config->harbor);
+./skynet_start.c:	skynet_handle_init(config->harbor);
+./skynet_start.c:	skynet_module_init(config->module_path);
+./skynet_start.c:	struct skynet_context *ctx = skynet_context_new(config->logservice, config->logger);
+./skynet_start.c:		fprintf(stderr, "Can't launch %s service\n", config->logservice);
+./skynet_start.c:	bootstrap(ctx, config->bootstrap);
+./skynet_start.c:	start(config->thread);
+./skynet_start.c:	if (config->daemon) {
+./skynet_start.c:		daemon_exit(config->daemon);
